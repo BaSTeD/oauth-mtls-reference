@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  compose:
+    name: Docker Compose end to end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Create .env with random demo secrets
+        run: |
+          sed -e "s/^COOKIE_SECRET=.*/COOKIE_SECRET=$(openssl rand -hex 32)/" \
+              -e "s/^DEMO_PASSWORD=.*/DEMO_PASSWORD=$(openssl rand -hex 16)/" \
+              .env.example > .env
+      - run: docker compose up -d --build --wait
+      - name: Run the demo client (fails unless the stolen token is rejected)
+        run: docker compose run --rm demo-client
+      - name: Rotate the client certificate and run again
+        run: |
+          docker compose run --rm certs ./scripts/rotate-client.sh /certs
+          docker compose run --rm demo-client
+      - name: Logs
+        if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down -v
+
+  gitleaks:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

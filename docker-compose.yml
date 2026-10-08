@@ -1,0 +1,72 @@
+name: oauth-mtls-reference
+
+x-service: &service
+  build: .
+  image: oauth-mtls-reference:local
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
+x-identifiers: &identifiers
+  ISSUER: https://auth-server:8443
+  RESOURCE: https://resource-server:8443
+  CERT_DIR: /certs
+
+services:
+  # Creates the throwaway test PKI on first start. Does nothing afterwards.
+  certs:
+    <<: *service
+    command: ["./scripts/gen-certs.sh", "/certs"]
+    volumes: ["certs:/certs"]
+    tmpfs: ["/tmp"]
+
+  auth-server:
+    <<: *service
+    command: ["node", "dist/auth-server/src/main.js"]
+    environment:
+      <<: *identifiers
+      COOKIE_SECRET: ${COOKIE_SECRET:?copy .env.example to .env first}
+      DEMO_USERNAME: ${DEMO_USERNAME:?copy .env.example to .env first}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?copy .env.example to .env first}
+    volumes: ["certs:/certs:ro"]
+    ports: ["127.0.0.1:${AUTH_SERVER_PORT:-8443}:8443"]
+    depends_on:
+      certs: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--no-check-certificate", "-O", "/dev/null", "https://localhost:8443/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  resource-server:
+    <<: *service
+    command: ["node", "dist/resource-server/src/main.js"]
+    environment:
+      <<: *identifiers
+    volumes: ["certs:/certs:ro"]
+    ports: ["127.0.0.1:${RESOURCE_SERVER_PORT:-9443}:8443"]
+    depends_on:
+      auth-server: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--no-check-certificate", "-O", "/dev/null", "https://localhost:8443/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Not started by `docker compose up`. Run it with:
+  #   docker compose run --rm demo-client
+  demo-client:
+    <<: *service
+    profiles: [demo]
+    command: ["node", "dist/demo-client/src/main.js"]
+    environment:
+      <<: *identifiers
+      DEMO_USERNAME: ${DEMO_USERNAME:?copy .env.example to .env first}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?copy .env.example to .env first}
+    volumes: ["certs:/certs:ro"]
+    depends_on:
+      auth-server: { condition: service_healthy }
+      resource-server: { condition: service_healthy }
+
+volumes:
+  certs:

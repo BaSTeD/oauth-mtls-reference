@@ -1,0 +1,11 @@
+{
+  "name": "@oauth-mtls-reference/resource-server",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "jose": "^6.2.12",
+    "undici": "^7.30.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@oauth-mtls-reference/auth-server",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "jose": "^6.2.12",
+    "oidc-provider": "^9.12.2"
+  }
+}
