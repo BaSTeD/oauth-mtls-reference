@@ -215,7 +215,7 @@ This is a reference to read and run, not something to deploy.
 
 ## Development
 
-Requires Node.js 22 or later and OpenSSL.
+Requires Node.js 22 or later and OpenSSL. CI and the container image use Node.js 24.
 
 ```bash
 npm ci

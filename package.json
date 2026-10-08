@@ -20,12 +20,12 @@
     "demo": "node dist/demo-client/src/main.js"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.5",
     "@types/oidc-provider": "^9.12.1",
-    "eslint": "^9.39.5",
+    "eslint": "^10.12.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.1",
-    "vitest": "^3.2.7"
+    "vitest": "^5.0.3"
   }
 }
