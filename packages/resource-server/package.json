@@ -6,6 +6,6 @@
   "type": "module",
   "dependencies": {
     "jose": "^6.2.12",
-    "undici": "^7.30.0"
+    "undici": "^8.11.2"
   }
 }
